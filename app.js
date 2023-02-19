@@ -36,7 +36,7 @@ const List = mongoose.model("List", listSchema);
 
 app.get("/", (req, res) => {
 
-    todolistModel.find({}, function(err, foundItems){
+  todolistModel.find({}, function(err, foundItems){
 
   if(foundItems.length === 0){
     todolistModel.insertMany(allDocuments, function(err){
@@ -128,6 +128,6 @@ app.post("/delete", (req,res) => {
  });
 
 
-app.listen(3000, () => {
-console.log("Server started on port 3000");
+app.listen(4000, () => {
+console.log("Server started on port 4000");
 })
