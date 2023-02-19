@@ -5,12 +5,17 @@ const _ = require("lodash");
 
 const app = express();
 app.set("view engine", "ejs");
-app.use(bodyparser.urlencoded({extended: true}));
+app.use(bodyparser.urlencoded({ extended: true }));
 app.use('/public', express.static('public'));
-mongoose.connect("mongodb+srv://admin-SAPTA:Test1234@cluster0.2sgcowp.mongodb.net/todolistDB", {useNewUrlParser: true});
+mongoose.connect('mongodb://127.0.0.1:27017/todolistDB', { useNewUrlParser: true }).then(() => {
+  console.log("Connected to Database");
+}).catch((err) => {
+  console.log("Not Connected to Database ERROR! ", err);
+});
 
 const todolistSchema = new mongoose.Schema({
-  name: String });
+  name: String
+});
 const todolistModel = mongoose.model("todolistModel", todolistSchema);
 
 const todolistDocument1 = new todolistModel({
@@ -36,98 +41,98 @@ const List = mongoose.model("List", listSchema);
 
 app.get("/", (req, res) => {
 
-  todolistModel.find({}, function(err, foundItems){
+  todolistModel.find({}, function (err, foundItems) {
 
-  if(foundItems.length === 0){
-    todolistModel.insertMany(allDocuments, function(err){
-      if(err){
-        console.log(err);
-      }
-      else{
-        console.log("Successfully saved default items to DB.");
-      }
-       });
-       res.redirect("/");
+    if (foundItems.length === 0) {
+      todolistModel.insertMany(allDocuments, function (err) {
+        if (err) {
+          console.log(err);
+        }
+        else {
+          console.log("Successfully saved default items to DB.");
+        }
+      });
+      res.redirect("/");
     }
-    else{
-    res.render("list", { listTitle: "Today", newListItems: foundItems});
-   }
-   });
+    else {
+      res.render("list", { listTitle: "Today", newListItems: foundItems });
+    }
+  });
 
 });
 
 app.post("/", (req, res) => {
-   const itemName = req.body.newItem;
-   const listName = req.body.list;
+  const itemName = req.body.newItem;
+  const listName = req.body.list;
 
-   const item = new todolistModel({
+  const item = new todolistModel({
     name: itemName
-   });
-    if(listName === "Today"){
-      item.save();
-      res.redirect("/");
-    }
-    else{
-       List.findOne({name: listName}, function(err, foundList){
-         if(!err){
-           foundList.items.push(item);
-           foundList.save();
-           console.log(listName);
-           res.redirect("/" + listName);
-          }
-
-          });
-       }
-
   });
+  if (listName === "Today") {
+    item.save();
+    res.redirect("/");
+  }
+  else {
+    List.findOne({ name: listName }, function (err, foundList) {
+      if (!err) {
+        foundList.items.push(item);
+        foundList.save();
+        console.log(listName);
+        res.redirect("/" + listName);
+      }
 
-app.get("/:customListName", function(req,res){
+    });
+  }
+
+});
+
+app.get("/:customListName", function (req, res) {
   const customListName = _.capitalize(req.params.customListName);
 
-  List.findOne({name: customListName}, function(err, foundList){
-    if(!err){
-      if(!foundList){
+  List.findOne({ name: customListName }, function (err, foundList) {
+    if (!err) {
+      if (!foundList) {
 
-       //Create a new list
-       const list = new List({
-         name: customListName,
-         items: allDocuments
-       });
-         list.save();
-         res.redirect("/" + customListName);
-      }
-      else{
-
-         //Show an existing list
-          res.render("list", {listTitle: foundList.name, newListItems: foundList.items})
-          }
-             }
+        //Create a new list
+        const list = new List({
+          name: customListName,
+          items: allDocuments
         });
+        list.save();
+        res.redirect("/" + customListName);
+      }
+      else {
 
-      });
+        //Show an existing list
+        res.render("list", { listTitle: foundList.name, newListItems: foundList.items })
+      }
+    }
+  });
 
-app.post("/delete", (req,res) => {
+});
+
+app.post("/delete", (req, res) => {
 
   const checkedItemId = req.body.checkbox;
   const listName = req.body.listName;
 
-   if(listName === "Today"){
-     todolistModel.findByIdAndRemove(checkedItemId, function(err){
-     if(!err){
-     console.log("Removed Successfully !");
-     res.redirect("/");
-       }
+  if (listName === "Today") {
+    todolistModel.findByIdAndRemove(checkedItemId, function (err) {
+      if (!err) {
+        console.log("Removed Successfully !");
+        res.redirect("/");
+      }
     })
-  } else{
-    List.findOneAndUpdate({name: listName}, {$pull: {items: {_id: checkedItemId}}}, function(err, foundList){
-      if(!err){
+  } else {
+    List.findOneAndUpdate({ name: listName }, { $pull: { items: { _id: checkedItemId } } }, function (err, foundList) {
+      if (!err) {
         res.redirect("/" + listName)
       }
     })
   }
- });
+});
 
 
 app.listen(4000, () => {
-console.log("Server started on port 4000");
+  console.log("Server started on port 4000");
 })
